@@ -1,0 +1,32 @@
+{
+  "name": "img-tinyfy",
+  "version": "1.0.0",
+  "description": "Compress All images under the folder",
+  "main": "index.js",
+  "scripts": {
+    "test": "img-tinyfy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarthMarcius/img-tinify.git"
+  },
+  "keywords": [
+    "images",
+    "optimization",
+    "tinypng"
+  ],
+  "author": "markiyan_pyts",
+  "license": "ISC",
+  "preferGlobal": true,
+  "bin": {
+    "img-tinyfy": "index.js"
+  },
+  "bugs": {
+    "url": "https://github.com/DarthMarcius/img-tinify/issues"
+  },
+  "homepage": "https://github.com/DarthMarcius/img-tinify#readme",
+  "dependencies": {
+    "recursive-readdir": "^2.0.0",
+    "tinify": "^1.3.0"
+  }
+}
