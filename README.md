@@ -1,4 +1,4 @@
-# img-tinify
+# img-tinyfy
 > It's npm tool based on https://tinypng.com API which allows you to minify all images under the folder you navigated to in Windows command line or Unix terminal.
 
 ##Installation
@@ -6,9 +6,9 @@ Tool must be installed globally to be used.
 
 1. Inatall node.js and npm from here https://nodejs.org/en/
 2. Get Your API key from https://tinypng.com/developers
-3. Run ```npm install -g img-tinify```
+3. Run ```npm install -g img-tinyfy```
 4. Navigate to folder with your images with ```cd``` command
-5. Run ```img-tinify Your API KEY HERE``` for example ```img-tinify AFFfSGgH35FFDs56```
+5. Run ```img-tinyfy Your API KEY HERE``` for example ```img-tinify AFFfSGgH35FFDs56```
 
 By tunning step 5 all ```png``` and ```jpg``` images in current directory and it's subdirectories will get optimized.
 
@@ -16,11 +16,11 @@ By tunning step 5 all ```png``` and ```jpg``` images in current directory and it
 
 To Get info about how much images you already optimized this month run the following command:
 
-```img-tinify Your API KEY HERE count```
+```img-tinyfy Your API KEY HERE count```
 
 For example:
 
-```img-tinify AFFfSGgH35FFDs56 count```
+```img-tinyfy AFFfSGgH35FFDs56 count```
 
 
 
