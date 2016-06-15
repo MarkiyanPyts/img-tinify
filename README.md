@@ -10,7 +10,7 @@ Tool must be installed globally to be used.
 4. Navigate to folder with your images with ```cd``` command
 5. Run ```img-tinyfy Your API KEY HERE``` for example ```img-tinify AFFfSGgH35FFDs56```
 
-By tunning step 5 all ```png``` and ```jpg``` images in current directory and it's subdirectories will get optimized.
+After step 5 all ```png``` and ```jpg``` images in current directory and it's subdirectories will get optimized.
 
 >Note: you have 500 images per month to optimize for free, you have to pay https://tinypng.com to get more images optimized per 1 month.
 
