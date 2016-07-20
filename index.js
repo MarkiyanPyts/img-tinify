@@ -32,7 +32,7 @@ class ImageCompressor {
 
     compressImages() {
         function ignoreFunc(file, stats) {
-            if(path.basename(file).match(/.*\.jpg$/g) || path.basename(file).match(/.*\.jpg$/g) || stats.isDirectory()) {
+            if(path.basename(file).match(/.*\.jpg$/g) || path.basename(file).match(/.*\.png$/g) || stats.isDirectory()) {
                 return false;
             }else {
                 return true;
