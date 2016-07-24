@@ -33,7 +33,7 @@ If you wish to disable output directory and return to the original behaviour wit
 
 >Note: you have 500 images per month to optimize for free, you have to pay https://tinypng.com to get more images optimized per 1 month.
 
-To Get info about how much images you already optimized this month run the following command:
+To get info about how much images you already optimized this month run the following command:
 
 ```img-tinyfy count```
 
