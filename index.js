@@ -18,7 +18,7 @@ class ImageCompressor {
             try {
                 this.config = require(this.configName);
             } catch(err) {
-                console.log(err);
+                this.writeLog(err.message, "error");
             }
         }
 
@@ -41,7 +41,7 @@ class ImageCompressor {
         };
 
         if(userArgs.length > 2) {
-            console.log("too many arguments")
+            this.writeLog("too many arguments", "error");
             return false;
         }
 
@@ -69,7 +69,7 @@ class ImageCompressor {
                     this.resetDefaultConfig();
                 break;
                 default:
-                console.log("You misspelled command name");
+                    this.writeLog("You misspelled command name", "error");
                 return;
             }
         }
@@ -89,15 +89,25 @@ class ImageCompressor {
     resetDefaultConfig() {
         var configDefaults = this.configDefaults;
         fs.open(this.configName, "w", (err, fd) => {
-            if (err) return console.log(err)
-            fs.writeFile(this.configName, "module.exports = \n"+JSON.stringify(this.configDefaults, null, 4), function (err) {
-                if (err) return console.log(err);
+            if (err) {
+                this.writeLog(err.message, "error");
+                return;
+            }
+
+            fs.writeFile(this.configName, "module.exports = \n"+JSON.stringify(this.configDefaults, null, 4), (err) => {
+                if (err) {
+                    this.writeLog(err.message, "error");
+                    return;
+                }
+
                 console.log("Default configs are set");
             });
         });
     }
 
     writeLog(logMessage, logType) {
+        console.log(logMessage);
+
         let logName;
         let notOptimizedFolder = this.config.notOptimizedFolder;
         let currentDate = new Date();
@@ -110,7 +120,7 @@ class ImageCompressor {
 
         fs.appendFile(logName, "\n" + currentDate.getDate() + "/" + (currentDate.getMonth() + 1) + "/" + currentDate.getFullYear() + " " + currentDate.getUTCHours() + ":" +currentDate.getUTCMinutes() + ": " + logMessage, (err) => {
             if (err) {
-                console.log(err);
+                this.writeLog(err.message, "error");
             }
         });
     }
@@ -121,14 +131,17 @@ class ImageCompressor {
         let mergedConfig = Object.assign({}, this.config, newConfig);
 
         fs.writeFile(this.configName, "module.exports = \n"+JSON.stringify(mergedConfig, null, 4), (err) => {
-          if (err) return console.log(err)
+          if (err) {
+              this.writeLog(err.message, "error");
+          }
+
           console.log(`${name} is set to ${value}`);
         });
     }
 
     setOutputPath(path) {
         if(!path) {
-            console.log("Please specify a path");
+            this.writeLog("Please specify a path", "error");
             return;
         }
         this.setConfig("outputPath", path);
@@ -136,24 +149,24 @@ class ImageCompressor {
 
     setApiKey(key) {
         if(!key) {
-            console.log("Please specify an API key");
+            this.writeLog("Please specify an API key", "error");
             return;
         }
         this.setConfig("apiKey", key);
     }
 
     howMuchDidICompress() {
-        tinify.validate(function(err) {
+        tinify.validate((err) => {
             if (err) {
                 if(err.message.indexOf("Error while connecting") !== -1) {
-                    console.log("You seem to have trouble with network connection");
+                    this.writeLog("You seem to have trouble with network connection", "error");
                 }else {
-                    console.log("Your API key is not yet set, or it's invalid");
+                    this.writeLog("Your API key is not yet set, or it's invalid", "error");
                 }
 
                 return;
             } else {
-              console.log(`you optimized ${tinify.compressionCount} images this month, max number of free images is 500`);
+                console.log(`you optimized ${tinify.compressionCount} images this month, max number of free images is 500`);
             }
         });
     }
@@ -162,9 +175,9 @@ class ImageCompressor {
         tinify.validate((err) => {
             if (err) {
                 if(err.message.indexOf("Error while connecting") !== -1) {
-                    console.log("You seem to have trouble with network connection");
+                    this.writeLog("You seem to have trouble with network connection", "error");
                 }else {
-                    console.log(`Your API key is not yet set, or it's invalid, you can set it with "img-tinyfy ${this.commands.setApiKey} YOURKEYHERE" command`);
+                    this.writeLog(`Your API key is not yet set, or it's invalid, you can set it with "img-tinyfy ${this.commands.setApiKey} YOURKEYHERE" command`, "error");
                 }
 
                 return;
@@ -178,10 +191,10 @@ class ImageCompressor {
                         if(stats.isDirectory()) {
                             this.compressionStart(outDirNormalized);
                         } else {
-                            console.log(`The output path set in config is not a directory, you can use "img-tinyfy ${this.commands.setOutputPath} OUTPUTPATHHERE" to set it properly, if you set path to false images will be compressed in their location`);
+                            this.writeLog(`The output path set in config is not a directory, you can use "img-tinyfy ${this.commands.setOutputPath} OUTPUTPATHHERE" to set it properly, if you set path to false images will be compressed in their location`, "error");
                         }
                     } catch(err) {
-                        console.log(`The output path set in config is not a directory, you can use "img-tinyfy ${this.commands.setOutputPath} OUTPUTPATHHERE" to set it properly, if you set path to false images will be compressed in their location`)
+                        this.writeLog(`The output path set in config is not a directory, you can use "img-tinyfy ${this.commands.setOutputPath} OUTPUTPATHHERE" to set it properly, if you set path to false images will be compressed in their location`, "error");
                         return;
                     }
                 }
@@ -264,18 +277,18 @@ class ImageCompressor {
                 }
             }
 
-            var source = tinify.fromFile(currentImage.path).toFile(this.iterationOutputArray[index].path, function(err) {
+            var source = tinify.fromFile(currentImage.path).toFile(this.iterationOutputArray[index].path, (err) => {
                 if(err) {
                     if (err instanceof tinify.AccountError) {
-                        console.log("Verify your API key and account limit.");
+                        this.writeLog("Verify your API key and account limit.", "error");
                     } else if (err instanceof tinify.ClientError) {
-                        console.log("Check your source image and request options.");
+                        this.writeLog("Check your source image and request options.", "error");
                     } else if (err instanceof tinify.ServerError) {
-                        console.log("Temporary issue with the Tinify API.");
+                        this.writeLog("Temporary issue with the Tinify API.", "error");
                     } else if (err instanceof tinify.ConnectionError) {
-                        console.log("A network connection error occurred.");
+                        this.writeLog("A network connection error occurred.", "error");
                     } else {
-                        console.log("The error message is: " + err.message);
+                        this.writeLog("The error message is: " + err.message, "error");
                     }
                 }else {
                     console.log(currentImage.path + " is optimized");
@@ -295,7 +308,7 @@ class ImageCompressor {
 
         recursive(process.env.INIT_CWD, [ignoreFunc], (err, files) => {
             if(!files.length) {
-                console.log("There is no .png nor .jpg images in current folder");
+                this.writeLog("There is no .png nor .jpg images in current folder", "error");
                 return;
             }
 
@@ -303,9 +316,6 @@ class ImageCompressor {
             this.iterationOutputArray = [];
             this.inputImagesArray = this.createImagesArray(outputPath, files);
             this.outputImagesArray = this.createImagesArray(outputPath, files, true);
-
-            //console.log("in:", this.inputImagesArray)
-            //console.log("out:", this.outputImagesArray)
 
             this.optimizeIteration();
         });

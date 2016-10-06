@@ -1,7 +1,7 @@
 module.exports =
 {
     "outputPath": "false",
-    "apiKey": "8lyxmoBum9bHoJwa8dMQtwbTZvLS6mRX",
+    "apiKey": "",
     "iterationNumber": 2,
     "iterationCheckInterval": 120000,
     "iterationTimeout": 240000,
