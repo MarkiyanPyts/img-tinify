@@ -5,6 +5,7 @@ let path = require("path");
 let fs = require('graceful-fs');
 let tinify = require("tinify");
 let recursive = require('recursive-readdir');
+let mv = require('mv');
 
 process.env.INIT_CWD = process.cwd();
 
@@ -33,11 +34,8 @@ class ImageCompressor {
             outputPath: "false",
             apiKey: "",
             iterationNumber: 2, //number of images to process at once
-            iterationCheckInterval: 120000,// 2 minutes
-            iterationTimeout: 240000, // 4 minutes
-            errorLogName: "error.log",
-            notOptimizedImagesLog: "not_optimized_images.log",
-            notOptimizedImagesFolder: "/notOptimizedImages"
+            iterationCheckInterval: 60000,// 1 minute
+            iterationTimeout: 12000, // 2 minutes
         };
 
         if(userArgs.length > 2) {
@@ -75,16 +73,17 @@ class ImageCompressor {
         }
     }
 
-    getFilesizeInBytes(filename) {
+    /*getFilesizeInBytes(filename) {
         let stats = fs.statSync(filename);
         let fileSizeInBytes = stats["size"];
 
         if(!fileSizeInBytes) {
-            throw "Could not determine file size of " + filename;
+            let err = `Could not determine file size of ${filename}`;
+            throw err;
         }
 
         return fileSizeInBytes;
-    }
+    }*/
 
     resetDefaultConfig() {
         var configDefaults = this.configDefaults;
@@ -113,14 +112,14 @@ class ImageCompressor {
         let currentDate = new Date();
 
         if(logType === "error") {
-            logName = path.resolve(process.env.INIT_CWD + "/" + this.config.errorLogName);
-        } else if(logType === "not optimized") {
-            logName = path.resolve(process.env.INIT_CWD + "/" + this.config.notOptimizedImagesLog);
+            logName = path.resolve(process.env.INIT_CWD + "/img_tinyfy_error.log");
+        } else if(logType === "notOptimized") {
+            logName = path.resolve(process.env.INIT_CWD + "/img_tinyfy_corrupt_images.log");
         }
 
-        fs.appendFile(logName, "\n" + currentDate.getDate() + "/" + (currentDate.getMonth() + 1) + "/" + currentDate.getFullYear() + " " + currentDate.getUTCHours() + ":" +currentDate.getUTCMinutes() + ": " + logMessage, (err) => {
+        fs.appendFile(logName, "\n" + currentDate.getDate() + "/" + (currentDate.getMonth() + 1) + "/" + currentDate.getFullYear() + " " + currentDate.getHours() + ":" +currentDate.getMinutes() + ": " + logMessage, (err) => {
             if (err) {
-                this.writeLog(err.message, "error");
+                console.log(err.message, "error");
             }
         });
     }
@@ -202,82 +201,74 @@ class ImageCompressor {
         });
     }
 
-    createImagesArray(outputPath, inputImages, isOutputArray) {
-        if(!isOutputArray) {
-            isOutputArray = false;
-        }
-
+    createOutputImagesArray(outputPath, inputImages) {
         let outputImages = [];
         let outputDirPath;
-        let imageSize;
 
-        if(isOutputArray) {
-            if(!outputPath) {
-                inputImages.forEach((imagePath) => {
-                    imagePath = path.normalize(imagePath);
+        if(!outputPath) {
+            inputImages.forEach((imagePath) => {
+                imagePath = path.normalize(imagePath);
 
-                    outputImages.push({
-                        path: imagePath
-                    });
-                });
+                outputImages.push(imagePath);
+            });
 
-                return outputImages;
-            }else {
-                inputImages.forEach((imagePath) => {
-                    imagePath = path.normalize(imagePath);
-                    outputDirPath = imagePath.replace(path.normalize(process.env.INIT_CWD), outputPath);
-
-                    outputImages.push({
-                        path: outputDirPath
-                    });
-                });
-
-                return outputImages;
-            }
+            return outputImages;
         }else {
             inputImages.forEach((imagePath) => {
                 imagePath = path.normalize(imagePath);
-                imageSize = this.getFilesizeInBytes(imagePath);
+                outputDirPath = imagePath.replace(path.normalize(process.env.INIT_CWD), outputPath);
 
-                outputImages.push({
-                    path: imagePath,
-                    size: imageSize
-                });
+                outputImages.push(outputDirPath);
             });
 
             return outputImages;
         }
     }
 
-    optimizeIteration(iterationArray, callback) {
+    optimizeIteration() {
         if(!this.inputImagesArray.length || !this.outputImagesArray.length) {
             console.log("Optimization Finished!!!");
             return false;
         }
-        console.log("Images optimization is in progress...");
 
-        while(this.iterationInputArray.length !== this.config.iterationNumber || this.inputImagesArray.length === 0) {
-            this.iterationInputArray.push(this.inputImagesArray.shift());
+        console.log("Images optimization is in progress, starting new iteration...");
+
+        this.iterationInputArray = [];
+        this.iterationOutputArray = [];
+        this.iterationStartTime = new Date();
+
+        if(this.inputImagesArray.length >= this.config.iterationNumber) {
+            while(this.iterationInputArray.length !== this.config.iterationNumber || this.inputImagesArray.length > 0) {
+                this.iterationInputArray.push(this.inputImagesArray.shift());
+            }
+
+            while(this.iterationOutputArray.length !== this.config.iterationNumber || this.outputImagesArray.length > 0) {
+                this.iterationOutputArray.push(this.outputImagesArray.shift());
+            }
+        }else {
+            while(this.inputImagesArray.length > 0) {
+                this.iterationInputArray.push(this.inputImagesArray.shift());
+            }
+
+            while(this.outputImagesArray.length > 0) {
+                this.iterationOutputArray.push(this.outputImagesArray.shift());
+            }
         }
 
-        while(this.iterationOutputArray.length !== this.config.iterationNumber || this.outputImagesArray.length === 0) {
-            this.iterationOutputArray.push(this.outputImagesArray.shift());
-        }
+        this.currentIterationNotOptimized = this.iterationInputArray;
 
-        this.writeLog("hi", "error");
-        setTimeout(() => {
-            console.log("boom")
-        }, 5000)
-        /*this.iterationInputArray.forEach((currentImage, index) => {
+        this.iterationInputArray.forEach((currentImage, index) => {
             if(this.config.outputPath !== "false") {
                 try {
-                    fs.mkdirSync(path.parse(this.iterationOutputArray[index].path).dir); //create directory if it does not exist
+                    fs.mkdirSync(path.parse(this.iterationOutputArray[index]).dir); //create directory if it does not exist
                 } catch(err) {
-
+                    if(err.message.indexOf("EXIST") == -1) {
+                        this.writeLog(err.message, "error");
+                    }
                 }
             }
 
-            var source = tinify.fromFile(currentImage.path).toFile(this.iterationOutputArray[index].path, (err) => {
+            var source = tinify.fromFile(currentImage).toFile(this.iterationOutputArray[index], (err) => {
                 if(err) {
                     if (err instanceof tinify.AccountError) {
                         this.writeLog("Verify your API key and account limit.", "error");
@@ -291,10 +282,56 @@ class ImageCompressor {
                         this.writeLog("The error message is: " + err.message, "error");
                     }
                 }else {
-                    console.log(currentImage.path + " is optimized");
+                    console.log(currentImage + " is optimized");
+                    this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(this.iterationInputArray[index]), 1); //remove optimized image from the array of not optimized ones
                 }
             });
-        });*/
+        });
+
+        this.iterationTimeout();
+    }
+
+    iterationTimeout() {
+        setTimeout(() => {
+            let currentTime = new Date();
+            let timeSinceLastIterationStart = currentTime - this.iterationStartTime;
+
+            if(timeSinceLastIterationStart <= this.config.iterationTimeout) {
+                if(this.currentIterationNotOptimizedIntput.length) {
+                    optimizeIteration();
+                }else {
+                    this.iterationTimeout();
+                }
+            }else {
+                this.moveCorruptFiles();
+            }
+        }, this.config.iterationCheckInterval);
+    }
+
+    moveCorruptFiles() {
+        this.optimizeIteration();
+
+        this.currentIterationNotOptimized.forEach((corruptImage, index) => {
+            this.writeLog(`${corruptImage} is corrupt, or could not be optimized for some reason, we will try to move it to corruptImages folder`, "notOptimized");
+
+            let imagePath = path.normalize(corruptImage);
+            let corruptImagesOutputDir = path.normalize(process.env.INIT_CWD + "/corruptImages");
+            let outputDirPath = imagePath.replace(path.normalize(process.env.INIT_CWD), corruptImagesOutputDir);
+
+            try {
+                fs.mkdirSync(path.parse(outputDirPath).dir); //create directory if it does not exist
+            } catch(err) {
+                if(err.message.indexOf("EXIST") == -1) {
+                    this.writeLog(err.message, "error");
+                }
+            }
+
+            mv(corruptImage, outputDirPath, (err) => {
+                if(err) {
+                    this.writeLog(err.message, "error");
+                }
+            });
+        });
     }
 
     compressionStart(outputPath) {
@@ -314,8 +351,8 @@ class ImageCompressor {
 
             this.iterationInputArray = [];
             this.iterationOutputArray = [];
-            this.inputImagesArray = this.createImagesArray(outputPath, files);
-            this.outputImagesArray = this.createImagesArray(outputPath, files, true);
+            this.inputImagesArray = files;
+            this.outputImagesArray = this.createOutputImagesArray(outputPath, files);
 
             this.optimizeIteration();
         });
