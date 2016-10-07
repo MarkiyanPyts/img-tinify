@@ -122,4 +122,6 @@ There is ```moveoptimized```function in img-tinyfy which will move all files whi
 ###moveoptimized
 ```img-tinyfy moveoptimized E:\testGround\test3Out```
 
+It will help you clean up current directory, not being forced to optimize already optimized images again.
+
 >**Important Note**: Moving images is much faster withing 1 disc partition, please keep that in mind to avoid trouble
