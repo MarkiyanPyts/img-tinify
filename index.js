@@ -34,7 +34,7 @@ class ImageCompressor {
         this.configDefaults =  {
             outputPath: "false",
             apiKey: "",
-            iterationNumber: 30, //number of images to process at once
+            iterationNumber: 25, //number of images to process at once
             iterationCheckInterval: 60000,// 1 minute
             iterationTimeout: 180000, // 3 minutes
         };
@@ -299,18 +299,25 @@ class ImageCompressor {
 
             if(timeSinceLastIterationStart <= this.config.iterationTimeout) {
                 if(!this.currentIterationNotOptimized.length) {
-                    this.optimizeIteration();//All good move t next Iteration
+                    console.log("Current iteration images is optimized, moving to the next one");
+                    this.optimizeIteration();//All good move to next Iteration
                 }else {
+                    this.writeLog("Still have some not optimezed images, waiting for them to process", "error");
                     this.iterationTimeout();//Still issues wait
                 }
             }else {
-                this.moveCorruptFiles();//Time is out move corrupted files to logs
+                if(!this.currentIterationNotOptimized.length) {
+                    console.log("Current iteration images is optimized, moving to the next one");
+                    this.optimizeIteration();//All good move to next Iteration
+                }else {
+                    this.moveCorruptFiles();//Time is out move corrupted files to logs
+                }
             }
         }, this.config.iterationCheckInterval);
     }
 
     moveCorruptFiles() {
-        this.optimizeIteration();//continue with optimization which errors is stored
+        let remainingNotOptimized = this.currentIterationNotOptimized.length;
 
         this.currentIterationNotOptimized.forEach((corruptImage, index) => {
             this.writeLog(`${corruptImage} is corrupt, or could not be optimized for some reason, we will try to move it to corruptImages folder`, "notOptimized");
@@ -330,6 +337,13 @@ class ImageCompressor {
             mv(corruptImage, outputDirPath, (err) => {
                 if(err) {
                     this.writeLog(err.message, "error");
+                }
+
+                remainingNotOptimized--;
+
+                if(remainingNotOptimized <= 0) {
+                    this.writeLog("moved corrupt images to corruptImages folder, starting new iteraation", "error");
+                    this.optimizeIteration();//continue with optimization
                 }
             });
         });
