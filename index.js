@@ -351,8 +351,14 @@ class ImageCompressor {
                     } else {
                         this.writeLog("The error message is: " + err.message, "error");
                     }
+
+                    this.processedImages++;
+                    console.log(`${this.processedImages} ${this.processedImages === 1 ? "image" : "images"} is processed out of ${this.imagesToProcess}`);
                 }else {
+                    this.processedImages++;
+
                     console.log(currentImage + " is optimized");
+                    console.log(`${this.processedImages} ${this.processedImages === 1 ? "image" : "images"} is processed out of ${this.imagesToProcess}`);
                     this.writeLog(currentImage, "success");
                     this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(currentImage), 1); //remove optimized image from the array of not optimized ones
                 }
@@ -438,6 +444,8 @@ class ImageCompressor {
             this.iterationOutputArray = [];
             this.inputImagesArray = files;
             this.outputImagesArray = this.createOutputImagesArray(outputPath, files);
+            this.imagesToProcess = this.inputImagesArray.length;
+            this.processedImages = 0;
 
             fs.closeSync(fs.openSync(this.successLog, 'w'));//Empty successLog
 
@@ -465,24 +473,70 @@ class ImageCompressor {
                     return;
                 }
 
-                let optimizedImages = data.split(","),
-                    optimizedImagesOutput;
-                optimizedImages.pop();
+                this.optimizedImagesArray = data.split(",");
+                this.optimizedImagesArray.pop();
+                this.optimizedImagesOutputArray = this.createOutputImagesArray(outputDir, this.optimizedImagesArray);
 
-                optimizedImagesOutput = this.createOutputImagesArray(outputDir, optimizedImages);
-
-                optimizedImages.forEach((inputImage, index) => {
-                    mv(inputImage, optimizedImagesOutput[index], (err) => {
-                        if(err) {
-                            this.writeLog(`failed to move ${inputImage}, maybe you moved it already or there is other issue.`, "error");
-                        }else {
-                            console.log(`${inputImage} is moved`);
-                        }
-                    });
-                });
+                this.moveIteration();
             });
         });
     };
+
+    moveIteration() {
+        if(!this.optimizedImagesArray.length || !this.optimizedImagesOutputArray.length) {
+            console.log("Images move Finished!!!");
+            return false;
+        }
+
+        console.log("Images move is in progress, starting new iteration...");
+
+        this.moveIterationInputArray = [];
+        this.moveIterationOutputArray = [];
+
+        if(this.optimizedImagesArray.length >= 50) {
+            while(this.moveIterationInputArray.length < 50 && this.optimizedImagesArray.length > 0) {
+                this.moveIterationInputArray.push(this.optimizedImagesArray.shift());
+            }
+
+            while(this.moveIterationOutputArray.length < 50 && this.optimizedImagesOutputArray.length > 0) {
+                this.moveIterationOutputArray.push(this.optimizedImagesOutputArray.shift());
+            }
+        }else {
+            while(this.optimizedImagesArray.length > 0) {
+                this.moveIterationInputArray.push(this.optimizedImagesArray.shift());
+            }
+
+            while(this.optimizedImagesOutputArray.length > 0) {
+                this.moveIterationOutputArray.push(this.optimizedImagesOutputArray.shift());
+            }
+        }
+
+        this.imagesToMove = this.moveIterationInputArray.length;
+
+        this.moveIterationInputArray.forEach((inputImage, index) => {
+            mv(inputImage, this.moveIterationOutputArray[index], (err) => {
+                if(err) {
+                    this.writeLog(`failed to move ${inputImage}, maybe you moved it already or there is other issue.`, "error");
+                }else {
+                    console.log(`${inputImage} is moved`);
+                }
+
+                this.imagesToMove--;
+            });
+        });
+
+        this.moveIterationTimeout();
+    }
+
+    moveIterationTimeout() {
+        setTimeout(() => {
+            if(this.imagesToMove.length) {
+                this.moveIterationTimeout();
+            }else {
+                this.moveIteration();
+            }
+        }, 1000);
+    }
 }
 
 let userArgs = process.argv.slice(2);
