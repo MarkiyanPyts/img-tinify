@@ -482,6 +482,11 @@ class ImageCompressor {
 
                 this.optimizedImagesArray = data.split(",");
                 this.optimizedImagesArray.pop();
+
+                this.optimizedImagesArray = this.optimizedImagesArray.map((item) => {
+                    return path.normalize(item);
+                });
+
                 this.optimizedImagesOutputArray = this.createOutputImagesArray(outputDir, this.optimizedImagesArray);
 
                 this.moveIteration();
@@ -521,9 +526,18 @@ class ImageCompressor {
         this.imagesToMove = this.moveIterationInputArray.length;
 
         this.moveIterationInputArray.forEach((inputImage, index) => {
+            try {
+                mkdirp.sync(path.parse(this.moveIterationOutputArray[index]).dir);//create directory if it does not exist
+            } catch(err) {
+                if(err.message.indexOf("EXIST") == -1) {
+                    this.writeLog(err.message, "error");
+                }
+            }
+
             mv(inputImage, this.moveIterationOutputArray[index], (err) => {
                 if(err) {
-                    this.writeLog(`failed to move ${inputImage}, maybe you moved it already or there is other issue.`, "error");
+                    //this.writeLog(`failed to move ${inputImage}, maybe you moved it already or there is other issue.`, "error");
+                    this.writeLog(err.message, "error");
                 }else {
                     console.log(`${inputImage} is moved`);
                 }
