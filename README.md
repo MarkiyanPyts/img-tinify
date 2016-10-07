@@ -44,7 +44,7 @@ For example:
 ##Advanced options
 Starting at version 1.1.0 img-tinyfy has support for giant image folders optimization.
 
->**Important Note**: Different output directory is reccomended for big image catalog processing, also ```setpath``` should point to folder on the same disc partition to avoid unpredictable issues.
+>**Important Note**: Different output directory is recomended for big image catalog processing, also ```setpath``` should point to folder on the same disc partition to avoid unpredictable issues.
 
 ##```iterationNumber```
 img-tinyfy limits number of images processed at once with ```iterationNumber``` option which is 25 images per iteration, by default.
