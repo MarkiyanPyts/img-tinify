@@ -27,6 +27,7 @@
   "homepage": "https://github.com/DarthMarcius/img-tinify#readme",
   "dependencies": {
     "graceful-fs": "^4.1.9",
+    "mkdirp": "^0.5.1",
     "mv": "^2.1.1",
     "recursive-readdir": "^2.0.0",
     "tinify": "^1.3.0"

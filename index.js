@@ -6,6 +6,7 @@ let fs = require('graceful-fs');
 let tinify = require("tinify");
 let recursive = require('recursive-readdir');
 let mv = require('mv');
+let mkdirp = require('mkdirp');
 
 process.env.INIT_CWD = process.cwd();
 
@@ -33,9 +34,9 @@ class ImageCompressor {
         this.configDefaults =  {
             outputPath: "false",
             apiKey: "",
-            iterationNumber: 2, //number of images to process at once
+            iterationNumber: 30, //number of images to process at once
             iterationCheckInterval: 60000,// 1 minute
-            iterationTimeout: 12000, // 2 minutes
+            iterationTimeout: 180000, // 3 minutes
         };
 
         if(userArgs.length > 2) {
@@ -238,11 +239,11 @@ class ImageCompressor {
         this.iterationStartTime = new Date();
 
         if(this.inputImagesArray.length >= this.config.iterationNumber) {
-            while(this.iterationInputArray.length !== this.config.iterationNumber || this.inputImagesArray.length > 0) {
+            while(this.iterationInputArray.length < this.config.iterationNumber && this.inputImagesArray.length > 0) {
                 this.iterationInputArray.push(this.inputImagesArray.shift());
             }
 
-            while(this.iterationOutputArray.length !== this.config.iterationNumber || this.outputImagesArray.length > 0) {
+            while(this.iterationOutputArray.length < this.config.iterationNumber && this.outputImagesArray.length > 0) {
                 this.iterationOutputArray.push(this.outputImagesArray.shift());
             }
         }else {
@@ -260,7 +261,7 @@ class ImageCompressor {
         this.iterationInputArray.forEach((currentImage, index) => {
             if(this.config.outputPath !== "false") {
                 try {
-                    fs.mkdirSync(path.parse(this.iterationOutputArray[index]).dir); //create directory if it does not exist
+                    mkdirp.sync(path.parse(this.iterationOutputArray[index]).dir);//create directory if it does not exist
                 } catch(err) {
                     if(err.message.indexOf("EXIST") == -1) {
                         this.writeLog(err.message, "error");
@@ -283,7 +284,7 @@ class ImageCompressor {
                     }
                 }else {
                     console.log(currentImage + " is optimized");
-                    this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(this.iterationInputArray[index]), 1); //remove optimized image from the array of not optimized ones
+                    this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(currentImage), 1); //remove optimized image from the array of not optimized ones
                 }
             });
         });
@@ -297,19 +298,19 @@ class ImageCompressor {
             let timeSinceLastIterationStart = currentTime - this.iterationStartTime;
 
             if(timeSinceLastIterationStart <= this.config.iterationTimeout) {
-                if(this.currentIterationNotOptimizedIntput.length) {
-                    optimizeIteration();
+                if(!this.currentIterationNotOptimized.length) {
+                    this.optimizeIteration();//All good move t next Iteration
                 }else {
-                    this.iterationTimeout();
+                    this.iterationTimeout();//Still issues wait
                 }
             }else {
-                this.moveCorruptFiles();
+                this.moveCorruptFiles();//Time is out move corrupted files to logs
             }
         }, this.config.iterationCheckInterval);
     }
 
     moveCorruptFiles() {
-        this.optimizeIteration();
+        this.optimizeIteration();//continue with optimization which errors is stored
 
         this.currentIterationNotOptimized.forEach((corruptImage, index) => {
             this.writeLog(`${corruptImage} is corrupt, or could not be optimized for some reason, we will try to move it to corruptImages folder`, "notOptimized");
@@ -319,7 +320,7 @@ class ImageCompressor {
             let outputDirPath = imagePath.replace(path.normalize(process.env.INIT_CWD), corruptImagesOutputDir);
 
             try {
-                fs.mkdirSync(path.parse(outputDirPath).dir); //create directory if it does not exist
+                mkdirp.sync(path.parse(outputDirPath).dir); //create directory if it does not exist
             } catch(err) {
                 if(err.message.indexOf("EXIST") == -1) {
                     this.writeLog(err.message, "error");
