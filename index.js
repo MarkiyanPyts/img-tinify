@@ -28,7 +28,10 @@ class ImageCompressor {
             "setOutputPath": "setpath",
             "setApiKey": "setkey",
             "resetDefaultConfig": "reset",
-            "countOfCompressedImages": "count"
+            "countOfCompressedImages": "count",
+            "setCheckInterval": "setchecktime",
+            "setIterationTimeout": "settimeout",
+            "setIterationNumber": "setiteration"
         };
 
         this.configDefaults =  {
@@ -64,6 +67,18 @@ class ImageCompressor {
                     commandParam = userArgs[1];
                     this.setApiKey(commandParam);
                 break;
+                case this.commands.setCheckInterval:
+                    commandParam = userArgs[1];
+                    this.setCheckInterval(commandParam);
+                break;
+                case this.commands.setIterationTimeout:
+                    commandParam = userArgs[1];
+                    this.setIterationTimeout(commandParam);
+                break;
+                case this.commands.setIterationNumber:
+                    commandParam = userArgs[1];
+                    this.setIterationNumber(commandParam);
+                break;
                 case this.commands.resetDefaultConfig:
                     this.resetDefaultConfig();
                 break;
@@ -85,6 +100,53 @@ class ImageCompressor {
 
         return fileSizeInBytes;
     }*/
+    setCheckInterval(interval) {
+        if(!interval) {
+            this.writeLog("Please specify interval", "error");
+            return;
+        }
+
+        interval = parseInt(interval);
+
+        if(!interval) {
+            this.writeLog("iterationCheckInterval must be integer number of miliseconds", "error");
+            return;
+        }
+
+        this.setConfig("iterationCheckInterval", interval);
+    }
+
+    setIterationTimeout(timeout) {
+        if(!timeout) {
+            this.writeLog("Please specify timeout", "error");
+            return;
+        }
+
+        timeout = parseInt(timeout);
+
+        if(!timeout) {
+            this.writeLog("iterationTimeout must be integer number of miliseconds", "error");
+            return;
+        }
+
+        this.setConfig("iterationTimeout", timeout);
+    }
+
+    setIterationNumber(iterationNumber) {
+        if(!iterationNumber) {
+            this.writeLog("Please specify iterationNumber", "error");
+            return;
+        }
+
+        iterationNumber = parseInt(iterationNumber);
+
+        if(!iterationNumber) {
+            this.writeLog("iterationNumber must be integer number of images to be processed at once", "error");
+            return;
+        }
+
+        this.setConfig("iterationNumber", iterationNumber);
+    }
 
     resetDefaultConfig() {
         var configDefaults = this.configDefaults;
@@ -274,7 +336,7 @@ class ImageCompressor {
                     if (err instanceof tinify.AccountError) {
                         this.writeLog("Verify your API key and account limit.", "error");
                     } else if (err instanceof tinify.ClientError) {
-                        this.writeLog("Check your source image and request options.", "error");
+                        this.writeLog("Check your source image and request options. Input image may be corrupt.", "error");
                     } else if (err instanceof tinify.ServerError) {
                         this.writeLog("Temporary issue with the Tinify API.", "error");
                     } else if (err instanceof tinify.ConnectionError) {
@@ -320,10 +382,10 @@ class ImageCompressor {
         let remainingNotOptimized = this.currentIterationNotOptimized.length;
 
         this.currentIterationNotOptimized.forEach((corruptImage, index) => {
-            this.writeLog(`${corruptImage} is corrupt, or could not be optimized for some reason, we will try to move it to corruptImages folder`, "notOptimized");
+            this.writeLog(`${corruptImage} is corrupt, or could not be optimized for some reason, we will try to move it to notProcessed folder`, "notOptimized");
 
             let imagePath = path.normalize(corruptImage);
-            let corruptImagesOutputDir = path.normalize(process.env.INIT_CWD + "/corruptImages");
+            let corruptImagesOutputDir = path.normalize(process.env.INIT_CWD + "/notProcessed");
             let outputDirPath = imagePath.replace(path.normalize(process.env.INIT_CWD), corruptImagesOutputDir);
 
             try {
@@ -342,7 +404,7 @@ class ImageCompressor {
                 remainingNotOptimized--;
 
                 if(remainingNotOptimized <= 0) {
-                    this.writeLog("moved corrupt images to corruptImages folder, starting new iteraation", "error");
+                    this.writeLog("moved not optimized images to notProcessed folder, starting new iteraation", "error");
                     this.optimizeIteration();//continue with optimization
                 }
             });
