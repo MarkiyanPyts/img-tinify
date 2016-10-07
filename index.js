@@ -24,6 +24,10 @@ class ImageCompressor {
             }
         }
 
+        this.errorLog = path.resolve(process.env.INIT_CWD + "/img_tinyfy_error.log");
+        this.notOptimizedLog = path.resolve(process.env.INIT_CWD + "/img_tinyfy_not_optimized.log");
+        this.successLog = path.resolve(process.env.INIT_CWD + "/img_tinyfy_success.log");
+
         this.commands = {
             "setOutputPath": "setpath",
             "setApiKey": "setkey",
@@ -31,7 +35,8 @@ class ImageCompressor {
             "countOfCompressedImages": "count",
             "setCheckInterval": "setchecktime",
             "setIterationTimeout": "settimeout",
-            "setIterationNumber": "setiteration"
+            "setIterationNumber": "setiteration",
+            "moveSuccessFiles": "moveoptimized"
         };
 
         this.configDefaults =  {
@@ -79,6 +84,10 @@ class ImageCompressor {
                     commandParam = userArgs[1];
                     this.setIterationNumber(commandParam);
                 break;
+                case this.commands.moveSuccessFiles:
+                    commandParam = userArgs[1];
+                    this.moveSuccessFiles(commandParam);
+                break;
                 case this.commands.resetDefaultConfig:
                     this.resetDefaultConfig();
                 break;
@@ -89,17 +98,6 @@ class ImageCompressor {
         }
     }
 
-    /*getFilesizeInBytes(filename) {
-        let stats = fs.statSync(filename);
-        let fileSizeInBytes = stats["size"];
-
-        if(!fileSizeInBytes) {
-            let err = `Could not determine file size of ${filename}`;
-            throw err;
-        }
-
-        return fileSizeInBytes;
-    }*/
     setCheckInterval(interval) {
         if(!interval) {
             this.writeLog("Please specify interval", "error");
@@ -168,23 +166,32 @@ class ImageCompressor {
     }
 
     writeLog(logMessage, logType) {
-        console.log(logMessage);
-
         let logName;
-        let notOptimizedFolder = this.config.notOptimizedFolder;
         let currentDate = new Date();
 
         if(logType === "error") {
-            logName = path.resolve(process.env.INIT_CWD + "/img_tinyfy_error.log");
-        } else if(logType === "notOptimized") {
-            logName = path.resolve(process.env.INIT_CWD + "/img_tinyfy_corrupt_images.log");
+            console.log(logMessage);
+            logName = this.errorLog;
+        }else if(logType === "notOptimized") {
+            console.log(logMessage);
+            logName = this.notOptimizedLog;
+        }else if(logType === "success") {
+            logName = this.successLog;
         }
 
-        fs.appendFile(logName, "\n" + currentDate.getDate() + "/" + (currentDate.getMonth() + 1) + "/" + currentDate.getFullYear() + " " + currentDate.getHours() + ":" +currentDate.getMinutes() + ": " + logMessage, (err) => {
-            if (err) {
-                console.log(err.message, "error");
-            }
-        });
+        if(logType === "success") {
+            fs.appendFile(logName, logMessage + ",", (err) => {
+                if (err) {
+                    console.log(err.message, "error");
+                }
+            });
+        }else {
+            fs.appendFile(logName, "\n" + currentDate.getDate() + "/" + (currentDate.getMonth() + 1) + "/" + currentDate.getFullYear() + " " + currentDate.getHours() + ":" +currentDate.getMinutes() + ": " + logMessage, (err) => {
+                if (err) {
+                    console.log(err.message, "error");
+                }
+            });
+        }
     }
 
     setConfig(name, value) {
@@ -346,6 +353,7 @@ class ImageCompressor {
                     }
                 }else {
                     console.log(currentImage + " is optimized");
+                    this.writeLog(currentImage, "success");
                     this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(currentImage), 1); //remove optimized image from the array of not optimized ones
                 }
             });
@@ -364,7 +372,7 @@ class ImageCompressor {
                     console.log("Current iteration images is optimized, moving to the next one");
                     this.optimizeIteration();//All good move to next Iteration
                 }else {
-                    this.writeLog("Still have some not optimezed images, waiting for them to process", "error");
+                    this.writeLog("Still have some not optimized images, waiting for them to process", "error");
                     this.iterationTimeout();//Still issues wait
                 }
             }else {
@@ -405,7 +413,7 @@ class ImageCompressor {
 
                 if(remainingNotOptimized <= 0) {
                     this.writeLog("moved not optimized images to notProcessed folder, starting new iteraation", "error");
-                    this.optimizeIteration();//continue with optimization
+                    this.optimizeIteration();//continue with optimization after bad images are in notProcessed folder
                 }
             });
         });
@@ -431,9 +439,50 @@ class ImageCompressor {
             this.inputImagesArray = files;
             this.outputImagesArray = this.createOutputImagesArray(outputPath, files);
 
+            fs.closeSync(fs.openSync(this.successLog, 'w'));//Empty successLog
+
             this.optimizeIteration();
         });
     }
+
+    moveSuccessFiles(outputDir) {
+        try {
+            outputDir = path.normalize(outputDir);
+        }catch(err) {
+            this.writeLog("output directory path is wrong", "error");
+            return;
+        }
+
+        fs.open(this.successLog, "a+", (err, fd) => {
+            if (err) {
+                this.writeLog(`could not open ${this.successLog} for reading`, "error");
+                return;
+            }
+
+            fs.readFile(this.successLog, "utf8", (err, data) => {
+                if (err) {
+                    this.writeLog(`could not open ${this.successLog} for reading`, "error");
+                    return;
+                }
+
+                let optimizedImages = data.split(","),
+                    optimizedImagesOutput;
+                optimizedImages.pop();
+
+                optimizedImagesOutput = this.createOutputImagesArray(outputDir, optimizedImages);
+
+                optimizedImages.forEach((inputImage, index) => {
+                    mv(inputImage, optimizedImagesOutput[index], (err) => {
+                        if(err) {
+                            this.writeLog(`failed to move ${inputImage}, maybe you moved it already or there is other issue.`, "error");
+                        }else {
+                            console.log(`${inputImage} is moved`);
+                        }
+                    });
+                });
+            });
+        });
+    };
 }
 
 let userArgs = process.argv.slice(2);
