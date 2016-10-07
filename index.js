@@ -297,7 +297,6 @@ class ImageCompressor {
 
     optimizeIteration() {
         if(!this.inputImagesArray.length || !this.outputImagesArray.length) {
-            console.log("Optimization Finished!!!");
             return false;
         }
 
@@ -354,6 +353,10 @@ class ImageCompressor {
 
                     this.processedImages++;
                     console.log(`${this.processedImages} ${this.processedImages === 1 ? "image" : "images"} is processed out of ${this.imagesToProcess}`);
+
+                    if(this.processedImages >= this.imagesToProcess) {
+                        console.log("Optimization Finished!!!");
+                    }
                 }else {
                     this.processedImages++;
 
@@ -361,6 +364,10 @@ class ImageCompressor {
                     console.log(`${this.processedImages} ${this.processedImages === 1 ? "image" : "images"} is processed out of ${this.imagesToProcess}`);
                     this.writeLog(currentImage, "success");
                     this.currentIterationNotOptimized.splice(this.currentIterationNotOptimized.indexOf(currentImage), 1); //remove optimized image from the array of not optimized ones
+
+                    if(this.processedImages >= this.imagesToProcess) {
+                        console.log("Optimization Finished!!!");
+                    }
                 }
             });
         });
