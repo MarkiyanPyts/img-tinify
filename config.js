@@ -1,6 +1,6 @@
-module.exports = 
+module.exports =
 {
-    "outputPath": "false",
+    "outputPath": "",
     "apiKey": "",
     "iterationNumber": 25,
     "iterationCheckInterval": 60000,
