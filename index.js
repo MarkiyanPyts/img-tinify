@@ -356,6 +356,7 @@ class ImageCompressor {
 
                     if(this.processedImages >= this.imagesToProcess) {
                         console.log("Optimization Finished!!!");
+                        process.exit(0);
                     }
                 }else {
                     this.processedImages++;
@@ -367,6 +368,7 @@ class ImageCompressor {
 
                     if(this.processedImages >= this.imagesToProcess) {
                         console.log("Optimization Finished!!!");
+                        process.exit(0);
                     }
                 }
             });
@@ -497,6 +499,7 @@ class ImageCompressor {
     moveIteration() {
         if(!this.optimizedImagesArray.length || !this.optimizedImagesOutputArray.length) {
             console.log("Images move Finished!!!");
+            process.exit(0);
             return false;
         }
 

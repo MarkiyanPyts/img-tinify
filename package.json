@@ -1,6 +1,6 @@
 {
   "name": "img-tinyfy",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Compress All images under the folder",
   "main": "index.js",
   "scripts": {
