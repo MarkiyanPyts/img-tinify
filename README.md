@@ -44,27 +44,27 @@ For example:
 ##Advanced options
 Starting at version 1.1.0 img-tinyfy has support for giant image folders optimization.
 
->**Important Note**: Different output directory is recomended for big image catalog processing, also ```setpath``` should point to folder on the same disc partition to avoid unpredictable issues.
+>**Important Note**: Different output directory is recommended for big image catalog processing, also ```setpath``` should point to folder on the same disc partition to avoid unpredictable issues.
 
 ##```iterationNumber```
 img-tinyfy limits number of images processed at once with ```iterationNumber``` option which is 25 images per iteration, by default.
 
 ##```iterationCheckInterval```
 
-After iteration first started plugin will wait till period of time passes ```iterationCheckInterval``` (60000 miliseconds by default, which is 1 minute), when this time is out plugin checks if 25(by default) images was optimized without errors,
+After iteration first started plugin will wait till period of time passes ```iterationCheckInterval``` (60000 milliseconds by default, which is 1 minute), when this time is out plugin checks if 25(by default) images was optimized without errors,
 
 If so next iteration starts,
 
 if not all images is processed yet, or there are corrupt images which can not be processed img-tinyfy will wait for another ```iterationCheckInterval``` and so on, till it reaches ```iterationTimeout```
 
 ##```iterationTimeout```
-If there is still not optimized images after ```iterationTimeout``` period of time has passed since the start of current iteration, 
+If there is still not optimized images after ```iterationTimeout``` period of time has passed since the start of current iteration,
 
 Which is usually caused by this images being corrupt or network connection errors(which can occur when to many images are sent for processing at once ...controlled by ```iterationNumber```)
 
 img-tinyfy will move this not optimized images into **notProcessed** folder under your current cd directory,
 
-Which you can use after to fix corrupt images or run optimization on images which was not prcessed for the first time for some reason.
+Which you can use after to fix corrupt images or run optimization on images which was not processed for the first time for some reason.
 
 **notProcessed** folder will preserve the folder structure images had before optimization,
 
@@ -76,19 +76,19 @@ So after you fix issues you can merge them with images which was optimized first
 Any errors which appear while optimization is in progress is written to **img_tinyfy_error.log** file which will be created under your current cd directory.
 
 ##Not Processed images log
-After ```iterationTimeout``` has passed on current optimization iteration, aside from being moved to **notProcessed** directory **img_tinyfy_corrupt_images.log** file will appear under your cd directory with info about every image which was not optimized in current iteratioon.
+After ```iterationTimeout``` has passed on current optimization iteration, aside from being moved to **notProcessed** directory **img_tinyfy_corrupt_images.log** file will appear under your cd directory with info about every image which was not optimized in current iteration.
 
 ##Setters for Advanced options
->**Important Note**: Before you do any change to this options please keep in mind that ```iterationTimeout``` should allways be bigger than ```iterationCheckInterval```.
+>**Important Note**: Before you do any change to this options please keep in mind that ```iterationTimeout``` should always be bigger than ```iterationCheckInterval```.
 
 >And too big ```iterationNumber``` can cause network connection errors, ```node EMFILE: too many open files``` error and other issues.
 
-If you wish to experiment with this options to udjust tool to your network connection or make optimization faster please keep it in mind.
+If you wish to experiment with this options to adjust tool to your network connection or make optimization faster please keep it in mind.
 
 Also consider that smaller ```iterationNumber``` results in less connection errors and issues.
 
 ##setchecktime
-Setter for ```iterationCheckInterval``` 
+Setter for ```iterationCheckInterval```
 
 Example:
 ```img-tinyfy setchecktime 60000```
@@ -106,14 +106,14 @@ Example:
 ```img-tinyfy setiteration 25```
 
 ##Helper for internet connection loss
-Is you are optimizeng a big catalog of images, which can take some time and cost some money, you might be concerned about internet connection loss,
+Is you are optimizing a big catalog of images, which can take some time and cost some money, you might be concerned about internet connection loss,
 
-Normally if you have optimized 700 images and have 2000 more to go net connecction loss can cause trouble because even with not optimized images in **notProcessed** folder and **img_tinyfy_corrupt_images.log** it might take you some time to filter what images have been optimized and to which img-tinyfy did not get before connection was lost. 
+Normally if you have optimized 700 images and have 2000 more to go net connection loss can cause trouble because even with not optimized images in **notProcessed** folder and **img_tinyfy_corrupt_images.log** it might take you some time to filter what images have been optimized and to which img-tinyfy did not get before connection was lost.
 
 One option you have is to wait till all iterations finish and files get to **notProcessed** folder but that's a big loss of time.
 
 ###Easy Solution
-Now img-tinyfy creates another log file in your cd directory called ```img_tinyfy_success.log``` it will contain comma separated values of all images which has been successfuly compressed during past iterations.
+Now img-tinyfy creates another log file in your cd directory called ```img_tinyfy_success.log``` it will contain comma separated values of all images which has been successfully compressed during past iterations.
 
 It's not for you to read though.
 
@@ -124,4 +124,4 @@ There is ```moveoptimized```function in img-tinyfy which will move all files whi
 
 It will help you clean up current directory, not being forced to optimize already optimized images again.
 
->**Important Note**: Moving images is much faster withing 1 disc partition, please keep that in mind to avoid trouble
+>**Important Note**: Moving images is much faster within 1 disc partition, please keep that in mind to avoid trouble
